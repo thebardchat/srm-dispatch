@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'SRM Dispatch',
         short_name: 'SRM',
         description: 'SRM Concrete North Alabama — Daily Dispatch Tool',
-        theme_color: '#0a0a0a',
-        background_color: '#0a0a0a',
+        theme_color: '#161311',
+        background_color: '#161311',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
