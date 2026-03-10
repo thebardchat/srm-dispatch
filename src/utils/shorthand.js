@@ -1,4 +1,4 @@
-import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA, C519_TUE_PLANTS, C507_TUE_PLANTS, CONTACTS } from '../config/crew.js'
+import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA, C519_TUE_PLANTS, C507_TUE_PLANTS, BP_FIRST_PLANTS, CONTACTS } from '../config/crew.js'
 import { rotaAssign } from './rotation.js'
 import { timeToMinutes, getDriveTime, LOAD_TIME, UNLOAD_TIME, QUARRY_CLOSE } from '../config/distances.js'
 
@@ -38,6 +38,20 @@ function endOfShift519(name, crew, startTime, hoursBeforeDelivery, down, subMap)
   return `→${p("519",down,subMap)}→Scrap→${mh} 67s→${p(homePlant,down,subMap)} home`
 }
 
+// BP first-rock: rotating MH 67s delivery to a main plant (NOT 518)
+// Then 518 check: MM 78s→518 if they can hold it, otherwise deadhead to BP
+function bpFirstRock(name, cycleDay, down, subMap) {
+  const group = BP_GROUPS[["A","B","C"][cycleDay % 3]]
+  const idx = group.indexOf(name)
+  // Rotating drivers get index-based rotation; Stacey/Curtis use cycleDay directly
+  const plantIdx = idx >= 0 ? (idx + cycleDay) % BP_FIRST_PLANTS.length : cycleDay % BP_FIRST_PLANTS.length
+  return p(BP_FIRST_PLANTS[plantIdx], down, subMap)
+}
+
+function check518(down, subMap) {
+  return `📞 518: Shane ${CONTACTS.SHANE} / Anthony ${CONTACTS.ANTHONY}→MM 78s→${p("518",down,subMap)} or DH`
+}
+
 export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay, startOverrides }) {
   const mh    = p("591", down, subMap)
   const scMH  = `Scrap→${mh}`
@@ -49,7 +63,10 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
   if (name === "CHRIS P") return "CHRIS P: CHER→MSAND→Tupelo Block→APAC Tremont→511→POD→519→PRELOAD"
   if (name === "Tim")     return `Tim: 519→${p("506",down,subMap)} delivery→POD check→PRELOAD 519`
 
-  if (name === "Stacey")  return `Stacey: ${scMH} 67s→518 stage→502 BP 1/4 downs→907 blocks→511 Palmer→POD sand→home`
+  if (name === "Stacey") {
+    const firstRock = bpFirstRock(name, cycleDay, down, subMap)
+    return `Stacey: ${scMH} 67s→${firstRock} rock→${check518(down,subMap)}→502 BP 1/4 downs→907 blocks→511 Palmer→POD sand→home`
+  }
 
   if (name === "Alexis") {
     const dest514 = p("514", down, subMap)
@@ -65,7 +82,10 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
   // Curtis (506/Decatur) — scrap to MH
   if (name === "Curtis") {
     if (curtisOffice) return "Curtis: IN OFFICE — 525 needs coverage"
-    if (onBP) return `Curtis: ${scMH} 67s→518 stage→502 BP 1/4 downs→907 blocks→${p("594",down,subMap)} 67s→${p("506",down,subMap)} rock→POD sand→home`
+    if (onBP) {
+      const firstRock = bpFirstRock(name, cycleDay, down, subMap)
+      return `Curtis: ${scMH} 67s→${firstRock} rock→${check518(down,subMap)}→502 BP 1/4 downs→907 blocks→${p("594",down,subMap)} 67s→${p("506",down,subMap)} rock→POD sand→home`
+    }
     return `Curtis: ${scMH} 67s→${p("525",down,subMap)} rock→home`
   }
 
@@ -74,7 +94,7 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
   if (tf && C519_NAMES.includes(name)) {
     const idx = C519_NAMES.indexOf(name)
     const tuePlant = p(C519_TUE_PLANTS[(idx + cycleDay) % C519_TUE_PLANTS.length], down, subMap)
-    return `${name}: Scrap→${mh} 67s→${tuePlant}→📞 518 check: Shane ${CONTACTS.SHANE} / Anthony ${CONTACTS.ANTHONY}→MM 67 or DH→502 BP 1/4 downs→907 blocks→POD sand→519`
+    return `${name}: Scrap→${mh} 67s→${tuePlant}→${check518(down,subMap)}→502 BP 1/4 downs→907 blocks→POD sand→519`
   }
 
   if (tf && C507_NAMES.includes(name)) {
@@ -97,13 +117,14 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
 
   // ── BP ROTATION (non-Tuesday/Friday) ──
   if (onBP) {
+    const firstRock = bpFirstRock(name, cycleDay, down, subMap)
     const postBP =
       C507_NAMES.includes(name)
         ? `→${mh} 67s→${p(rotaAssign(C507_NAMES,name,C507_ROTA,cycleDay),down,subMap)} rock→POD sand→home`
       : C519_NAMES.includes(name)
         ? `→${mh} 67s→${p("519",down,subMap)} rock→POD→home`
         : `→${mh} 67s→${p(rotaAssign(C506_NAMES,name,C506_ROTA,cycleDay),down,subMap)} rock→POD sand→home`
-    return `${name}: ${scMH} 67s→518 stage→502 BP 1/4 downs→907 blocks${postBP}`
+    return `${name}: ${scMH} 67s→${firstRock} rock→${check518(down,subMap)}→502 BP 1/4 downs→907 blocks${postBP}`
   }
 
   // ── STANDARD ROUTES (non-BP, non-Tuesday/Friday) ──

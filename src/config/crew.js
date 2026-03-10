@@ -19,7 +19,10 @@ export const DED_POOL = [...C507_NAMES, ...C519_NAMES, ...C506_NAMES]
 export const C519_TUE_PLANTS = ["511", "506", "513", "507"]   // 519 crew delivers MH 67s to these
 export const C507_TUE_PLANTS = ["516", "514", "519", "513"]   // 507 crew delivers POD sand to these
 
-// Contacts for 518 Scottsboro material check (519 crew calls before BP on Tue/Fri)
+// BP first-rock delivery — MH 67s goes to one of these FIRST (not 518), rotates by driver index + cycleDay
+export const BP_FIRST_PLANTS = ["506", "513", "511", "507"]
+
+// Contacts for 518 Scottsboro material check
 export const CONTACTS = {
   SHANE:   "256-402-5176",
   ANTHONY: "256-924-4328",
