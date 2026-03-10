@@ -43,8 +43,8 @@ export const ALL_DRIVERS = [
   { name: "Jimmy",   crew: "506",   color: "#CE93D8", bg: "#1a0a22", start: "05:00", noPreload: true },
   { name: "Roberto", crew: "506",   color: "#CE93D8", bg: "#1a0a22", start: "04:00", noPreload: true },
   { name: "Jonathon",crew: "506",   color: "#CE93D8", bg: "#1a0a22", start: "04:15", noPreload: true },
-  { name: "Stacey",  crew: "507",   color: "#4FC3F7", bg: "#001a22", start: "04:00", noPreload: true },
-  { name: "Alexis",  crew: "516",    color: "#FF7043", bg: "#220a00", start: "08:00", noPreload: true, fixedBP: true, shortDay: true },
+  { name: "Stacey",  crew: "507",   color: "#4FC3F7", bg: "#001a22", start: "04:00", fixedBP: true },
+  { name: "Alexis",  crew: "516",    color: "#FF7043", bg: "#220a00", start: "08:00", noPreload: true, fixed: true, shortDay: true },
 ]
 
 export const CREW_TABS   = ["ALL", "519", "507", "506", "BRIDGEPORT", "DUMP"]
