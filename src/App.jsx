@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { ALL_DRIVERS, CREW_TABS, CREW_COLORS, BP_GROUPS, FIXED_BP } from './config/crew.js'
 import { ALL_PLANTS, SUBS } from './config/plants.js'
 import { getCycleDay, getBPGroup, getBPDrivers, driverBPDay, getBPCalendar, isTueFri } from './utils/rotation.js'
 import { buildShorthand } from './utils/shorthand.js'
+import { addMinutes } from './config/distances.js'
 
 const DAYS   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
@@ -18,26 +19,46 @@ function crewMatch(driver, tab, bpDrivers) {
   return false
 }
 
-export default function App() {
-  // BUG 1 FIX: today is state, refreshes at midnight
-  const [today, setToday] = useState(() => new Date())
+function isActualToday(d) {
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
 
+export default function App() {
+  const [today, setToday] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const dp = params.get('date')
+    if (dp) { const [y,m,d] = dp.split('-').map(Number); return new Date(y, m-1, d) }
+    return new Date()
+  })
+
+  // Midnight auto-refresh — only when viewing actual today
   useEffect(() => {
+    if (!isActualToday(today)) return
     const now = new Date()
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    const ms = midnight - now
-    const timer = setTimeout(() => setToday(new Date()), ms)
+    const timer = setTimeout(() => setToday(new Date()), midnight - now)
     return () => clearTimeout(timer)
   }, [today])
 
-  // Derived date values — recalculate when today changes
+  // Date navigation — skip weekends
+  function navigateDay(dir) {
+    setToday(prev => {
+      const next = new Date(prev)
+      next.setDate(next.getDate() + dir)
+      while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + dir)
+      return next
+    })
+  }
+
+  // Derived date values
   const DAY_STR  = DAYS[today.getDay()].toUpperCase()
   const DATE_STR = `${DAY_STR} ${MONTHS[today.getMonth()]} ${today.getDate()}`
   const cycleDay = getCycleDay(today)
   const BP_TODAY = getBPGroup(cycleDay)
   const BP_DRIVERS_TODAY = getBPDrivers(cycleDay)
+  const viewingToday = isActualToday(today)
 
-  // FEATURE 2: Read initial state from URL
   const [tf,           setTf]           = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('tf') === '1' ? true : isTueFri(new Date())
@@ -54,7 +75,39 @@ export default function App() {
   const [crew,         setCrew]         = useState("ALL")
   const [view,         setView]         = useState("ROUTES")
 
-  // FEATURE 5: Offline indicator
+  // Start time overrides (15-min increments)
+  const [startOverrides, setStartOverrides] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sp = params.get('starts')
+    if (!sp) return {}
+    const obj = {}
+    sp.split(',').forEach(pair => {
+      const [name, time] = pair.split(':')
+      if (name && time) obj[name] = time.substring(0,2) + ':' + time.substring(2)
+    })
+    return obj
+  })
+
+  function getStart(name, defaultStart) {
+    return startOverrides[name] || defaultStart
+  }
+
+  function adjustStart(name, defaultStart, delta) {
+    const current = getStart(name, defaultStart)
+    const next = addMinutes(current, delta)
+    setStartOverrides(prev => {
+      if (next === defaultStart) { const s = {...prev}; delete s[name]; return s }
+      return {...prev, [name]: next}
+    })
+  }
+
+  // Auto-reset tf when date changes
+  useEffect(() => {
+    setTf(isTueFri(today))
+    setStartOverrides({})
+  }, [today])
+
+  // Offline indicator
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   useEffect(() => {
     const on  = () => setIsOnline(true)
@@ -64,7 +117,7 @@ export default function App() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [])
 
-  // FEATURE 2: Write state to URL on change
+  // URL state persistence
   useEffect(() => {
     const params = new URLSearchParams()
     if (tf) params.set('tf', '1')
@@ -72,9 +125,18 @@ export default function App() {
     if (swap519) params.set('swap', '1')
     if (curtisOffice) params.set('curtis', '1')
     if (down.size) params.set('down', [...down].join(','))
+    if (!viewingToday) {
+      const y = today.getFullYear()
+      const m = String(today.getMonth()+1).padStart(2,'0')
+      const d = String(today.getDate()).padStart(2,'0')
+      params.set('date', `${y}-${m}-${d}`)
+    }
+    if (Object.keys(startOverrides).length) {
+      params.set('starts', Object.entries(startOverrides).map(([n,t]) => `${n}:${t.replace(':','')}`).join(','))
+    }
     const query = params.toString()
     window.history.replaceState({}, '', query ? `?${query}` : window.location.pathname)
-  }, [tf, mhDay, swap519, curtisOffice, down])
+  }, [tf, mhDay, swap519, curtisOffice, down, today, viewingToday, startOverrides])
 
   const subMap = {}
   down.forEach(code => { subMap[code] = subOverride[code] || (SUBS[code]?.[0] || "") })
@@ -92,7 +154,6 @@ export default function App() {
     })
   }
 
-  // BUG 2 FIX: Clipboard fallback for HTTP
   const copyText = useCallback(function copyText(text, key) {
     let final = text
     const alexisDriver = ALL_DRIVERS.find(d => d.shortDay)
@@ -128,7 +189,10 @@ export default function App() {
     }
   }, [down])
 
-  const shArgs = { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay }
+  const shArgs = { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay, startOverrides }
+
+  const navBtnStyle = { background:"transparent", border:"1px solid #333", color:"#777",
+    padding:"2px 10px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit", lineHeight:"1" }
 
   return (
     <div style={{ fontFamily:"'Courier New',Courier,monospace", background:"#0a0a0a", minHeight:"100vh", color:"#e0e0e0" }}>
@@ -141,12 +205,30 @@ export default function App() {
         </div>
       )}
 
+      {/* ── NOT-TODAY BANNER ── */}
+      {!viewingToday && (
+        <div style={{ background:"#0a1a1a", border:"1px solid #80DEEA", color:"#80DEEA",
+          padding:"5px 16px", fontSize:"9px", letterSpacing:"2px", textAlign:"center",
+          display:"flex", justifyContent:"center", alignItems:"center", gap:"12px" }}>
+          <span>VIEWING: {DATE_STR} — NOT TODAY</span>
+          <button onClick={() => setToday(new Date())}
+            style={{ background:"#80DEEA22", border:"1px solid #80DEEA", color:"#80DEEA",
+              padding:"2px 10px", fontSize:"9px", cursor:"pointer", fontFamily:"inherit" }}>
+            BACK TO TODAY
+          </button>
+        </div>
+      )}
+
       {/* ── HEADER ── */}
       <div style={{ background:"#111", borderBottom:`2px solid ${anyAudible?"#FF5252":crewColor}`, padding:"10px 16px" }}>
         <div style={{ fontSize:"9px", letterSpacing:"4px", color:anyAudible?"#FF5252":crewColor, marginBottom:"3px" }}>SRM DISPATCH / MASTER TOOL</div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:"8px" }}>
           <div>
-            <div style={{ fontSize:"18px", fontWeight:"bold", color:"#fff", letterSpacing:"2px" }}>ALL CREWS — {DATE_STR}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+              <button onClick={() => navigateDay(-1)} style={navBtnStyle}>◀</button>
+              <div style={{ fontSize:"18px", fontWeight:"bold", color:"#fff", letterSpacing:"2px" }}>{DATE_STR}</div>
+              <button onClick={() => navigateDay(1)} style={navBtnStyle}>▶</button>
+            </div>
             <div style={{ fontSize:"10px", color:"#555", marginTop:"2px" }}>
               BP GROUP {BP_TODAY} · CYCLE {cycleDay+1}/3 · {BP_GROUPS[BP_TODAY].join(", ")}
             </div>
@@ -323,6 +405,8 @@ export default function App() {
             const { name, color, bg } = driver
             const onBP        = BP_DRIVERS_TODAY.includes(name)
             const isCurtisOff = driver.officeMode && curtisOffice
+            const effectiveStart = getStart(name, driver.start)
+            const isOverridden = startOverrides[name] !== undefined
             const shortText   = buildShorthand(name, shArgs)
             const isCopied    = copied === name
             const hasAudible  = [...down].some(d => shortText.includes(d)) || isCurtisOff
@@ -336,17 +420,35 @@ export default function App() {
 
                 <div style={{ padding:"9px 12px 7px", borderBottom:`1px solid ${effectiveColor}22`,
                   display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div>
+                  <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
                       <div style={{ fontSize:"17px", fontWeight:"bold", letterSpacing:"2px",
                         color:isCurtisOff?"#FFCC02":hasAudible?"#FF5252":"#fff" }}>{name}</div>
                       {onBP && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>BP TODAY</span>}
                       {driver.fixedBP && <span style={{ fontSize:"8px", background:"#4FC3F722", border:"1px solid #4FC3F744", color:"#4FC3F7", padding:"1px 6px" }}>FIXED BP</span>}
-                      {driver.shortDay && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>{driver.start} · PARKS 516 · 2 ROUNDS</span>}
+                      {driver.shortDay && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>{effectiveStart} · PARKS 516 · 2 ROUNDS</span>}
                       {isCurtisOff && <span style={{ fontSize:"8px", background:"#FFCC0222", border:"1px solid #FFCC0244", color:"#FFCC02", padding:"1px 6px" }}>IN OFFICE</span>}
                     </div>
-                    <div style={{ fontSize:"8px", color:effectiveColor, letterSpacing:"1px", marginTop:"2px", display:"flex", gap:"6px", flexWrap:"wrap" }}>
-                      <span>{onBP?"BRIDGEPORT":driver.crew} CREW · {driver.start}</span>
+                    <div style={{ fontSize:"8px", color:effectiveColor, letterSpacing:"1px", marginTop:"2px", display:"flex", gap:"6px", flexWrap:"wrap", alignItems:"center" }}>
+                      <span>{onBP?"BRIDGEPORT":driver.crew} CREW</span>
+                      {/* ── START TIME STEPPER ── */}
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:"2px",
+                        border:`1px solid ${isOverridden?"#FFD700":"#333"}`, padding:"0 4px",
+                        background:isOverridden?"#1a1a00":"transparent" }}>
+                        <button onClick={() => adjustStart(name, driver.start, -15)}
+                          style={{ background:"none", border:"none", color:effectiveColor, cursor:"pointer",
+                            fontFamily:"inherit", fontSize:"10px", padding:"0 2px", lineHeight:"1" }}>-</button>
+                        <span style={{ color:isOverridden?"#FFD700":effectiveColor, fontWeight:isOverridden?"bold":"normal",
+                          minWidth:"32px", textAlign:"center" }}>{effectiveStart}</span>
+                        <button onClick={() => adjustStart(name, driver.start, 15)}
+                          style={{ background:"none", border:"none", color:effectiveColor, cursor:"pointer",
+                            fontFamily:"inherit", fontSize:"10px", padding:"0 2px", lineHeight:"1" }}>+</button>
+                      </span>
+                      {isOverridden && (
+                        <button onClick={() => setStartOverrides(p => { const s={...p}; delete s[name]; return s })}
+                          style={{ background:"none", border:"1px solid #555", color:"#555", cursor:"pointer",
+                            fontFamily:"inherit", fontSize:"7px", padding:"0 4px" }}>RST</button>
+                      )}
                       {bpInfo && !bpInfo.fixed && (() => {
                         const col = bpInfo.days===0?"#FF7043":bpInfo.days===1?"#FFD700":"#444"
                         return <span style={{ color:col, border:`1px solid ${col}33`, padding:"0 5px" }}>
