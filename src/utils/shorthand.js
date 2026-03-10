@@ -153,7 +153,7 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
     if (name === "Jimmy") return `${name}: ${scMH} 67s→${p("513",down,subMap)} rock→POD sand→${p("511",down,subMap)}→POD→511 repeat`
     // 514 chain rule (already existed, updated format)
     if (sub === "514") return `${name}: ${scMH} 67s→${p("511",down,subMap)} rock→POD sand→${after514("506", down, subMap)}→506 home`
-    return `${name}: ${scMH} 67s→${sub} rock→POD sand→${p("507",down,subMap)}→MM 67s→${p("511",down,subMap)}→POD sand→home`
+    return `${name}: ${scMH} 67s→${sub} rock→POD sand→home`
   }
 
   return `${name}: route TBD`
