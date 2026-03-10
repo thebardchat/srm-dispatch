@@ -145,15 +145,31 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
     return `${name}: ${scMH} 67s→${sub} rock→POD sand→home`
   }
 
-  // 506 (Decatur) — scrap to MH (591)
+  // 506 (Decatur) — scrap to MH (591), 2 rounds (close to MH 30min + POD 10min)
   if (C506_NAMES.includes(name)) {
-    const assigned = rotaAssign(C506_NAMES, name, C506_ROTA, cycleDay)
-    const sub = p(assigned, down, subMap)
-    if (name === "Kenny") return `${name}: ${scMH} 67s→${sub} rock→POD sand→${p("519",down,subMap)} scrap→${qry} repeat`
+    const idx = C506_NAMES.indexOf(name)
+    const r1raw = C506_ROTA[(idx + cycleDay) % C506_ROTA.length]
+    const r1 = p(r1raw, down, subMap)
+
+    if (name === "Kenny") return `${name}: ${scMH} 67s→${r1} rock→POD sand→${p("519",down,subMap)} scrap→${qry} repeat`
     if (name === "Jimmy") return `${name}: ${scMH} 67s→${p("513",down,subMap)} rock→POD sand→${p("511",down,subMap)}→POD→511 repeat`
-    // 514 chain rule (already existed, updated format)
-    if (sub === "514") return `${name}: ${scMH} 67s→${p("511",down,subMap)} rock→POD sand→${after514("506", down, subMap)}→506 home`
-    return `${name}: ${scMH} 67s→${sub} rock→POD sand→home`
+
+    // 514 chain rule on r1 — takes you home
+    if (r1 === "514") return `${name}: ${scMH} 67s→${p("511",down,subMap)} rock→POD sand→${after514("506", down, subMap)}→506 home`
+
+    // Round 2 plants from rotation
+    const sandRaw = C506_ROTA[(idx + cycleDay + 1) % C506_ROTA.length]
+    const sandPlant = p(sandRaw, down, subMap)
+    const r2raw = C506_ROTA[(idx + cycleDay + 2) % C506_ROTA.length]
+    const r2 = p(r2raw, down, subMap)
+
+    // 514 chain on mid-sand delivery — takes you home, skip round 2
+    if (sandPlant === "514") return `${name}: ${scMH} 67s→${r1} rock→POD sand→${after514("506", down, subMap)}→506 home`
+
+    // 514 chain on r2
+    if (r2 === "514") return `${name}: ${scMH} 67s→${r1} rock→POD sand→${sandPlant}→${mh} 67s→${p("511",down,subMap)} rock→POD sand→${after514("506", down, subMap)}→506 home`
+
+    return `${name}: ${scMH} 67s→${r1} rock→POD sand→${sandPlant}→${mh} 67s→${r2} rock→POD sand→home`
   }
 
   return `${name}: route TBD`
