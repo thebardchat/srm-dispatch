@@ -1,4 +1,4 @@
-import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA } from '../config/crews.js'
+import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA } from '../config/crew.js'
 import { rotaAssign } from './rotation.js'
 
 function p(code, down, subMap) {
@@ -67,22 +67,3 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
 
   return `${name}: route TBD`
 }
-```
-
----
-
-**Folder structure to create in GitHub:**
-```
-srm-dispatch/
-├── index.html
-├── package.json
-├── vite.config.js
-└── src/
-    ├── main.jsx
-    ├── App.jsx          ← copy from the existing output file
-    ├── config/
-    │   ├── crews.js
-    │   └── plants.js
-    └── utils/
-        ├── rotation.js
-        └── shorthand.js

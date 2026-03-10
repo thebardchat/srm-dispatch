@@ -1,4 +1,4 @@
-import { BP_GROUPS, DED_POOL, FIXED_BP } from '../config/crews.js'
+import { BP_GROUPS, DED_POOL, FIXED_BP } from '../config/crew.js'
 
 const BASE = new Date("2026-03-09")
 BASE.setHours(0,0,0,0)

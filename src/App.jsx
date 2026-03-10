@@ -1,23 +1,17 @@
-import { useState, useEffect } from "react"
-import { ALL_DRIVERS, CREW_TABS, CREW_COLORS, BP_GROUPS, C507_NAMES, C519_NAMES, C506_NAMES, FIXED_BP } from './config/crews.js'
+import { useState, useEffect, useCallback } from "react"
+import { ALL_DRIVERS, CREW_TABS, CREW_COLORS, BP_GROUPS, FIXED_BP } from './config/crew.js'
 import { ALL_PLANTS, SUBS } from './config/plants.js'
 import { getCycleDay, getBPGroup, getBPDrivers, driverBPDay, getBPCalendar, isTueFri } from './utils/rotation.js'
 import { buildShorthand } from './utils/shorthand.js'
 
-const TODAY     = new Date()
-const DAYS      = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-const MONTHS    = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
-const DAY_STR   = DAYS[TODAY.getDay()].toUpperCase()
-const DATE_STR  = `${DAY_STR} ${MONTHS[TODAY.getMonth()]} ${TODAY.getDate()}`
-const cycleDay  = getCycleDay(TODAY)
-const BP_TODAY  = getBPGroup(cycleDay)
-const BP_DRIVERS_TODAY = getBPDrivers(cycleDay)
+const DAYS   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
 const GRP_COLOR = { A:"#FF7043", B:"#FFD700", C:"#A5D6A7" }
 
-function crewMatch(driver, tab) {
+function crewMatch(driver, tab, bpDrivers) {
   if (tab === "ALL")         return true
   if (tab === "DUMP")        return driver.crew === "DUMP"
-  if (tab === "BRIDGEPORT")  return BP_DRIVERS_TODAY.includes(driver.name) || driver.fixedBP
+  if (tab === "BRIDGEPORT")  return bpDrivers.includes(driver.name) || driver.fixedBP
   if (tab === "507")         return driver.crew === "507" || driver.name === "Stacey"
   if (tab === "519")         return driver.crew === "519"
   if (tab === "506")         return driver.crew === "506"
@@ -25,22 +19,69 @@ function crewMatch(driver, tab) {
 }
 
 export default function App() {
-  const [tf,           setTf]           = useState(isTueFri(TODAY))
-  const [mhDay,        setMhDay]        = useState(false)
-  const [swap519,      setSwap519]      = useState(false)
-  const [curtisOffice, setCurtisOffice] = useState(false)
-  const [down,         setDown]         = useState(new Set())
+  // BUG 1 FIX: today is state, refreshes at midnight
+  const [today, setToday] = useState(() => new Date())
+
+  useEffect(() => {
+    const now = new Date()
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const ms = midnight - now
+    const timer = setTimeout(() => setToday(new Date()), ms)
+    return () => clearTimeout(timer)
+  }, [today])
+
+  // Derived date values — recalculate when today changes
+  const DAY_STR  = DAYS[today.getDay()].toUpperCase()
+  const DATE_STR = `${DAY_STR} ${MONTHS[today.getMonth()]} ${today.getDate()}`
+  const cycleDay = getCycleDay(today)
+  const BP_TODAY = getBPGroup(cycleDay)
+  const BP_DRIVERS_TODAY = getBPDrivers(cycleDay)
+
+  // FEATURE 2: Read initial state from URL
+  const [tf,           setTf]           = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('tf') === '1' ? true : isTueFri(new Date())
+  })
+  const [mhDay,        setMhDay]        = useState(() => new URLSearchParams(window.location.search).get('mh') === '1')
+  const [swap519,      setSwap519]      = useState(() => new URLSearchParams(window.location.search).get('swap') === '1')
+  const [curtisOffice, setCurtisOffice] = useState(() => new URLSearchParams(window.location.search).get('curtis') === '1')
+  const [down,         setDown]         = useState(() => {
+    const d = new URLSearchParams(window.location.search).get('down')
+    return d ? new Set(d.split(',')) : new Set()
+  })
   const [subOverride,  setSubOverride]  = useState({})
   const [copied,       setCopied]       = useState(null)
   const [crew,         setCrew]         = useState("ALL")
   const [view,         setView]         = useState("ROUTES")
+
+  // FEATURE 5: Offline indicator
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  useEffect(() => {
+    const on  = () => setIsOnline(true)
+    const off = () => setIsOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+
+  // FEATURE 2: Write state to URL on change
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (tf) params.set('tf', '1')
+    if (mhDay) params.set('mh', '1')
+    if (swap519) params.set('swap', '1')
+    if (curtisOffice) params.set('curtis', '1')
+    if (down.size) params.set('down', [...down].join(','))
+    const query = params.toString()
+    window.history.replaceState({}, '', query ? `?${query}` : window.location.pathname)
+  }, [tf, mhDay, swap519, curtisOffice, down])
 
   const subMap = {}
   down.forEach(code => { subMap[code] = subOverride[code] || (SUBS[code]?.[0] || "") })
 
   const anyAudible = down.size > 0 || curtisOffice || mhDay || swap519
   const crewColor  = CREW_COLORS[crew] || "#FF6F00"
-  const visible    = ALL_DRIVERS.filter(d => crewMatch(d, crew))
+  const visible    = ALL_DRIVERS.filter(d => crewMatch(d, crew, BP_DRIVERS_TODAY))
 
   function toggleDown(code) {
     setDown(prev => {
@@ -51,18 +92,54 @@ export default function App() {
     })
   }
 
-  function copyText(text, key) {
+  // BUG 2 FIX: Clipboard fallback for HTTP
+  const copyText = useCallback(function copyText(text, key) {
     let final = text
-    if (key === "Alexis" && down.has("ALEXIS_SHORT")) {
+    const alexisDriver = ALL_DRIVERS.find(d => d.shortDay)
+    const alexisName = alexisDriver ? alexisDriver.name : "Alexis"
+    if (key === alexisName && down.has("ALEXIS_SHORT")) {
       final = text.replace("/ R2:", "\n⚡ SHORT DAY — After R1 → 907 scrap block → 516 (skip R2 if short on time)\n\nR2 if time allows: ")
     }
-    navigator.clipboard.writeText(final).then(() => { setCopied(key); setTimeout(() => setCopied(null), 2500) })
-  }
+
+    function fallbackCopy(t, k) {
+      const el = document.createElement("textarea")
+      el.value = t
+      el.style.position = "fixed"
+      el.style.opacity = "0"
+      document.body.appendChild(el)
+      el.focus()
+      el.select()
+      try {
+        document.execCommand("copy")
+        setCopied(k)
+        setTimeout(() => setCopied(null), 2500)
+      } catch {
+        alert("Copy failed — long press the route text to copy manually")
+      }
+      document.body.removeChild(el)
+    }
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(final)
+        .then(() => { setCopied(key); setTimeout(() => setCopied(null), 2500) })
+        .catch(() => fallbackCopy(final, key))
+    } else {
+      fallbackCopy(final, key)
+    }
+  }, [down])
 
   const shArgs = { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay }
 
   return (
     <div style={{ fontFamily:"'Courier New',Courier,monospace", background:"#0a0a0a", minHeight:"100vh", color:"#e0e0e0" }}>
+
+      {/* ── OFFLINE BANNER ── */}
+      {!isOnline && (
+        <div style={{ background:"#1a0808", border:"1px solid #FF5252", color:"#FF5252",
+          padding:"4px 16px", fontSize:"9px", letterSpacing:"2px", textAlign:"center" }}>
+          OFFLINE — SHOWING CACHED ROUTES
+        </div>
+      )}
 
       {/* ── HEADER ── */}
       <div style={{ background:"#111", borderBottom:`2px solid ${anyAudible?"#FF5252":crewColor}`, padding:"10px 16px" }}>
@@ -75,7 +152,11 @@ export default function App() {
             </div>
             {anyAudible && (
               <div style={{ fontSize:"10px", color:"#FF5252", marginTop:"3px" }}>
-                ⚠️ {[...down].map(d=>`${d} DOWN`).concat([mhDay?"MH DAY":"", swap519?"519 SWAP":"", curtisOffice?"CURTIS OFFICE":""]).filter(Boolean).join(" · ")}
+                {[...down].map(d=>`${d} DOWN`).concat([
+                  mhDay?"MH DAY":"",
+                  swap519?"519 SWAP":"",
+                  curtisOffice ? `${ALL_DRIVERS.find(d => d.officeMode)?.name || "Curtis"} OFFICE` : ""
+                ]).filter(Boolean).join(" · ")}
               </div>
             )}
           </div>
@@ -93,12 +174,12 @@ export default function App() {
             </div>
             <div style={{ display:"flex", gap:"5px", flexWrap:"wrap", justifyContent:"flex-end" }}>
               {[
-                { key:"mh",  label:"🔴 MH DAY",        active:mhDay,        fn:()=>setMhDay(p=>!p),        ac:"#F48FB1" },
-                { key:"519", label:"🔄 519 SWAP",       active:swap519,      fn:()=>setSwap519(p=>!p),      ac:"#A5D6A7" },
-                { key:"cur", label:"🏢 CURTIS OFFICE",  active:curtisOffice, fn:()=>setCurtisOffice(p=>!p), ac:"#FFCC02" },
-                { key:"aud", label:`⚠️ AUDIBLES${down.size?` (${down.size})`:""}`,
+                { key:"mh",  label:"MH DAY",        active:mhDay,        fn:()=>setMhDay(p=>!p),        ac:"#F48FB1" },
+                { key:"519", label:"519 SWAP",       active:swap519,      fn:()=>setSwap519(p=>!p),      ac:"#A5D6A7" },
+                { key:"cur", label:`${ALL_DRIVERS.find(d=>d.officeMode)?.name||"Curtis"} OFFICE`.toUpperCase(), active:curtisOffice, fn:()=>setCurtisOffice(p=>!p), ac:"#FFCC02" },
+                { key:"aud", label:`AUDIBLES${down.size?` (${down.size})`:""}`,
                               active:view==="AUDIBLES", fn:()=>setView(v=>v==="AUDIBLES"?"ROUTES":"AUDIBLES"), ac:"#FF5252" },
-                { key:"cal", label:"📅 BP CALENDAR",    active:view==="CALENDAR", fn:()=>setView(v=>v==="CALENDAR"?"ROUTES":"CALENDAR"), ac:"#80DEEA" },
+                { key:"cal", label:"BP CALENDAR",    active:view==="CALENDAR", fn:()=>setView(v=>v==="CALENDAR"?"ROUTES":"CALENDAR"), ac:"#80DEEA" },
               ].map(({key,label,active,fn,ac}) => (
                 <button key={key} onClick={fn}
                   style={{ background:active?`${ac}22`:"transparent", border:`1px solid ${active?ac:"#252525"}`,
@@ -181,7 +262,7 @@ export default function App() {
 
       {/* ── BP CALENDAR ── */}
       {view==="CALENDAR" && (() => {
-        const cal = getBPCalendar(TODAY)
+        const cal = getBPCalendar(today)
         const weeks = {}
         cal.forEach(d => { if (!weeks[d.weekNum]) weeks[d.weekNum]=[]; weeks[d.weekNum].push(d) })
         return (
@@ -241,7 +322,7 @@ export default function App() {
           {visible.map(driver => {
             const { name, color, bg } = driver
             const onBP        = BP_DRIVERS_TODAY.includes(name)
-            const isCurtisOff = name === "Curtis" && curtisOffice
+            const isCurtisOff = driver.officeMode && curtisOffice
             const shortText   = buildShorthand(name, shArgs)
             const isCopied    = copied === name
             const hasAudible  = [...down].some(d => shortText.includes(d)) || isCurtisOff
@@ -260,8 +341,8 @@ export default function App() {
                       <div style={{ fontSize:"17px", fontWeight:"bold", letterSpacing:"2px",
                         color:isCurtisOff?"#FFCC02":hasAudible?"#FF5252":"#fff" }}>{name}</div>
                       {onBP && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>BP TODAY</span>}
-                      {name==="Stacey" && <span style={{ fontSize:"8px", background:"#4FC3F722", border:"1px solid #4FC3F744", color:"#4FC3F7", padding:"1px 6px" }}>FIXED BP</span>}
-                      {name==="Alexis" && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>08:00 · PARKS 516 · 2 ROUNDS</span>}
+                      {driver.fixedBP && <span style={{ fontSize:"8px", background:"#4FC3F722", border:"1px solid #4FC3F744", color:"#4FC3F7", padding:"1px 6px" }}>FIXED BP</span>}
+                      {driver.shortDay && <span style={{ fontSize:"8px", background:"#FF704322", border:"1px solid #FF704344", color:"#FF7043", padding:"1px 6px" }}>{driver.start} · PARKS 516 · 2 ROUNDS</span>}
                       {isCurtisOff && <span style={{ fontSize:"8px", background:"#FFCC0222", border:"1px solid #FFCC0244", color:"#FFCC02", padding:"1px 6px" }}>IN OFFICE</span>}
                     </div>
                     <div style={{ fontSize:"8px", color:effectiveColor, letterSpacing:"1px", marginTop:"2px", display:"flex", gap:"6px", flexWrap:"wrap" }}>
@@ -284,7 +365,7 @@ export default function App() {
                 </div>
 
                 <div style={{ padding:"9px 12px", flex:1 }}>
-                  {name==="Alexis" ? (
+                  {driver.shortDay ? (
                     <div>
                       {shortText.split(" / ").map((line, i) => (
                         <div key={i} style={{ fontSize:"11px", lineHeight:"1.8", wordBreak:"break-word",
