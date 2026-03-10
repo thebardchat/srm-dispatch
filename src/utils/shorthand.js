@@ -1,4 +1,4 @@
-import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA } from '../config/crew.js'
+import { C507_NAMES, C519_NAMES, C506_NAMES, BP_GROUPS, C507_ROTA, C506_ROTA, C519_TUE_PLANTS, C507_TUE_PLANTS, CONTACTS } from '../config/crew.js'
 import { rotaAssign } from './rotation.js'
 
 function p(code, down, subMap) {
@@ -32,27 +32,42 @@ export function buildShorthand(name, { tf, mhDay, down, subMap, curtisOffice, sw
     return `Curtis: ${sc} 67s→${p("525",down,subMap)} rock→home`
   }
 
+  // ── TUESDAY/FRIDAY OVERRIDES ──
+  // 519 crew: MH scrap + 67s → spread to plants → call re: 518 → BP
+  // 507 crew: start at BP → blocks → POD spread → loop → home 507
+  // These include BP stops already, so they override the generic BP rotation
+
+  if (tf && C519_NAMES.includes(name)) {
+    const idx = C519_NAMES.indexOf(name)
+    const tuePlant = p(C519_TUE_PLANTS[(idx + cycleDay) % C519_TUE_PLANTS.length], down, subMap)
+    return `${name}: Scrap→${p("591",down,subMap)} 67s→${tuePlant}→📞 518 check: Shane ${CONTACTS.SHANE} / Anthony ${CONTACTS.ANTHONY}→MM 67 or DH→502 BP 1/4 downs→907 blocks→POD sand→519`
+  }
+
+  if (tf && C507_NAMES.includes(name)) {
+    const idx = C507_NAMES.indexOf(name)
+    const tuePlant = p(C507_TUE_PLANTS[(idx + cycleDay) % C507_TUE_PLANTS.length], down, subMap)
+    return `${name}: 502 BP 1/4 downs→907 blocks→POD sand→${tuePlant}→loop→507 home`
+  }
+
+  // ── BP ROTATION (non-Tuesday/Friday) ──
   if (onBP) {
     const postBP =
       C507_NAMES.includes(name)
         ? `→${qry} 67s→${p(rotaAssign(C507_NAMES,name,C507_ROTA,cycleDay),down,subMap)} rock→POD sand→home`
       : C519_NAMES.includes(name)
-        ? tf
-          ? `→${p("591",down,subMap)} 67s→${p("507",down,subMap)} rock→MM 67s→${p("518",down,subMap)}→POD sand→519`
-          : `→${qry} 67s→${p("519",down,subMap)} rock→POD→home`
+        ? `→${qry} 67s→${p("519",down,subMap)} rock→POD→home`
         : `→${qry} 67s→${p(rotaAssign(C506_NAMES,name,C506_ROTA,cycleDay),down,subMap)} rock→POD sand→home`
     return `${name}: ${sc} 67s→518 stage→502 BP 1/4 downs→907 blocks${postBP}`
   }
 
+  // ── STANDARD ROUTES (non-BP, non-Tuesday/Friday) ──
   if (C519_NAMES.includes(name)) {
     if (swap519) return `${name}: ${sc} 67s→${p("519",down,subMap)} rock→${qry} scrap→${p("519",down,subMap)} rock→${qry} loop`
-    if (tf) return `${name}: ${sc} 67s→${p("507",down,subMap)} rock→MM 67s→${p("518",down,subMap)}→502 BP 1/4 downs→907→POD sand→519`
     return `${name}: ${sc} 67s→${p("519",down,subMap)} rock→POD sand→home`
   }
 
   if (C507_NAMES.includes(name)) {
     const sub = p(rotaAssign(C507_NAMES,name,C507_ROTA,cycleDay), down, subMap)
-    if (tf) return `${name}: ${sc} 67s→${p("519",down,subMap)} rock×2→${sub} rock→POD sand→home`
     return `${name}: ${sc} 67s→${sub} rock→POD sand→home`
   }
 

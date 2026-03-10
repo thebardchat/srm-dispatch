@@ -15,6 +15,16 @@ export const C506_ROTA = ["511", "513", "514", "506"]
 
 export const DED_POOL = [...C507_NAMES, ...C519_NAMES, ...C506_NAMES]
 
+// Tuesday/Friday plant assignments — each driver gets one, rotates by cycleDay
+export const C519_TUE_PLANTS = ["511", "506", "513", "507"]   // 519 crew delivers MH 67s to these
+export const C507_TUE_PLANTS = ["516", "514", "519", "513"]   // 507 crew delivers POD sand to these
+
+// Contacts for 518 Scottsboro material check (519 crew calls before BP on Tue/Fri)
+export const CONTACTS = {
+  SHANE:   "256-402-5176",
+  ANTHONY: "256-924-4328",
+}
+
 export const ALL_DRIVERS = [
   { name: "CHRIS P", crew: "DUMP",  color: "#FFD700", bg: "#2a2200", start: "04:00", fixed: true },
   { name: "Tim",     crew: "DUMP",  color: "#BCAAA4", bg: "#1a1210", start: "04:00" },
