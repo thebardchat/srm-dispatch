@@ -1,7 +1,9 @@
-# srm-dispatch
-# SRM DISPATCH
-**SRM Concrete North Alabama — Daily Dispatch Tool**  
-`thebardchat/srm-dispatch` · Hazel Green, AL
+# 🚛 srm-dispatch
+
+> Daily route planning and driver assignment tool for SRM Concrete's North Alabama dump truck fleet. Built by a dispatcher, for a dispatcher.
+
+This project operates under the [ShaneTheBrain Constitution](https://github.com/thebardchat/constitution/blob/main/CONSTITUTION.md).
+
 
 ---
 
@@ -17,63 +19,42 @@ DISPATCH // HAZEL GREEN AL
 
 ---
 
-## WHAT IT IS
-
-A local-first, static React app that generates and delivers daily routes for 18 dump truck drivers across SRM's North Alabama concrete plant fleet. Built by a dispatcher, for dispatchers — no fluff, no login, no cloud dependency.
-
-One tap copies a driver's full route. You paste it into a text. Done.
 
 ---
 
-## WHAT IT DOES
+## What It Does
 
-- **Daily route generation** per driver based on crew, day type, and plant availability
-- **Bridgeport rotation** — 3-group (A/B/C) continuous weekday cycle, auto-calculated
-- **Audible system** — mark any plant DOWN, routes auto-update with substitutions
-- **One-tap copy** per driver → paste directly into text message
-- **BP Calendar** — 4-week rotation view so you know who's at Bridgeport every day
-- **Day type toggle** — Mon/Wed/Thu vs Tue/Fri schedule in one click
-- **Special modes** — MH Day, 519 Swap, Curtis Office, Alexis Short Day
+A browser-based dispatch planning tool that generates fair, efficient daily routes for a 14-driver triaxle fleet across three North Alabama quarry locations. Built to solve real problems in a real dispatch operation — zone rotation, backhaul logic, scrap runs, Bridgeport scheduling, and driver fairness tracking.
 
----
-
-## STACK
-
-| | |
-|---|---|
-| Framework | React 18 |
-| Build | Vite 5 |
-| Styling | Inline styles (intentional) |
-| State | `useState` only — no Redux, no context |
-| Backend | None — fully static |
-| Database | None — config files are the source of truth |
-
-No server. No database. No login. Runs anywhere a browser runs.
+**Core operations it handles:**
+- Zone rotation across Cherokee, Mt. Hope, and Bridgeport quarries
+- Fair driver assignment that tracks workload and prevents burnout
+- Scrap run and POD (Proof of Delivery) scheduling
+- Preload and backhaul logic
+- Daily dispatch schedule generation
 
 ---
 
-## PROJECT STRUCTURE
+## The Fleet
 
-```
-srm-dispatch/
-├── index.html
-├── package.json
-├── vite.config.js
-├── CLAUDE.md               ← AI assistant context (Claude Code)
-├── README.md               ← You are here
-└── src/
-    ├── App.jsx             ← All UI + state logic
-    ├── config/
-    │   ├── crews.js        ← Driver list, crew assignments, BP groups
-    │   └── plants.js       ← Plant list + substitution map
-    └── utils/
-        ├── rotation.js     ← BP cycle math (getCycleDay, getBPGroup)
-        └── shorthand.js    ← buildShorthand() — route text per driver
-```
+14 active triaxle drivers:
+`Marcus · Brittany · Eboni · Deletra · Stacey · Alexis · Kenny · Charlie · Jamie · Bryant · Jonathon · Jimmy · Eddie · Roberto`
 
 ---
 
-## QUICK START
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | Vanilla JavaScript + Vite |
+| UI | HTML/CSS — mobile-friendly |
+| State | Client-side only (no backend) |
+| Build | Vite |
+| Deploy | GitHub Pages · `thebardchat.github.io/srm-dispatch` |
+
+---
+
+## Running Locally
 
 ```bash
 git clone https://github.com/thebardchat/srm-dispatch.git
@@ -82,137 +63,55 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:5173`
+Runs on `localhost:5173`.
+
+## Running on Raspberry Pi 5
 
 ```bash
-# Production build
-npm run build
-
-# Preview production build locally
-npm run preview
+ssh shane@100.67.120.6
+cd /mnt/shanebrain-raid/shanebrain-core/
+git clone https://github.com/thebardchat/srm-dispatch.git
+cd srm-dispatch
+npm install && npm run build
+npx serve dist -p 3031
 ```
 
----
-
-## HOW THE BP ROTATION WORKS
-
-Bridgeport runs a **3-group continuous weekday cycle** — Groups A, B, and C rotating through every working day.
-
-- The cycle never resets — holidays are skipped, not restarted
-- `getCycleDay(date)` returns `0`, `1`, or `2` (maps to A, B, C)
-- Stacey and Alexis anchor BP **every day** regardless of group
-- No crew hits Bridgeport on back-to-back days
-
-The BP Calendar view shows 4 weeks ahead so you can plan around it.
+Access at `http://10.0.0.42:3031` on LAN or via Tailscale.
 
 ---
 
-## AUDIBLE SYSTEM
+## Hardware
 
-Mark a plant **DOWN** in the Audibles panel:
-
-1. Hit **⚠️ AUDIBLES** button
-2. Tap the plant that's down
-3. Select the sub plant (auto-populated from substitution map)
-4. Every affected driver's route updates instantly
-5. Red warning banner appears at top
-
-No sub available → shows **📞 Call Shane**
+| Component | Spec |
+|-----------|------|
+| **Raspberry Pi 5** | 16GB RAM · Local dev & hosting node |
+| **Pironman 5-MAX** | NVMe RAID 1 chassis by Sunfounder |
+| **2× WD Blue SN5000 2TB NVMe** | RAID 1 via mdadm |
 
 ---
 
-## DAY TYPES
+## Constitutional Alignment
 
-| Toggle | Schedule |
-|--------|----------|
-| MON/WED/THU | Standard plant rotation |
-| TUE/FRI | Alternate schedule (different plant assignments) |
+This tool is built for the real world — a dispatcher who is also the sole provider for his family. Every design decision follows the [ShaneTheBrain Constitution](https://github.com/thebardchat/constitution/blob/main/CONSTITUTION.md):
 
-Auto-detects on load. Override manually with the toggle in the header.
-
----
-
-## CREW TABS
-
-| Tab | Who |
-|-----|-----|
-| ALL | Every driver |
-| DUMP | Dump crew |
-| BRIDGEPORT | Today's BP group + Stacey + Alexis |
-| 507 | Plant 507 crew + Stacey |
-| 519 | Plant 519 crew |
-| 506 | Plant 506 crew |
+- **ADHD-aware design** — one screen, clear actions, no friction
+- **Local-first** — runs fully offline on Pi, no cloud required
+- **Serves the left-behind** — built for operators, not SaaS buyers
 
 ---
 
-## PLANT CODES
+## Built With
 
-| Code | Plant |
-|------|-------|
-| RG | Rogers Group |
-| MM | Martin Marietta |
-| LQ | 516 Lacey Spring |
-| MH | 591 Mt. Hope |
-| BP | Bridgeport |
+| Partner | Role |
+|---------|------|
+| **Claude by Anthropic** · [claude.ai](https://claude.ai) | Co-built every line of this project |
+| **Raspberry Pi 5** · [raspberrypi.com](https://www.raspberrypi.com) | Local compute backbone |
+| **Pironman 5-MAX** · [pironman.com](https://www.pironman.com) | NVMe RAID 1 chassis |
 
----
-
-## CONTRIBUTING
-
-This is an internal operations tool. Issues and PRs from the SRM team are welcome.
-
-If you're adding a driver or changing plant assignments, edit `src/config/crews.js` and `src/config/plants.js` — not `App.jsx`.
-
-Before touching rotation logic in `src/utils/rotation.js`, verify the output against the physical BP calendar. The math has to be right — this runs real trucks.
+> *Part of the [ShaneBrain Ecosystem](https://github.com/thebardchat) · Hazel Green, Alabama*
 
 ---
 
-## DEPLOYMENT
+## License
 
-### GitHub Pages
-```bash
-npm install gh-pages --save-dev
-```
-Add to `package.json`:
-```json
-"homepage": "https://thebardchat.github.io/srm-dispatch",
-"scripts": {
-  "deploy": "npm run build && gh-pages -d dist"
-}
-```
-```bash
-npm run deploy
-```
-
-### Cloudflare Pages
-Connect repo at `dash.cloudflare.com` → build command `npm run build` → output dir `dist`  
-Auto-deploys on every push to `main`.
-
----
-
-## ECOSYSTEM
-
-This tool is a **standalone leaf node** in the broader ShaneBrain ecosystem.
-
-```
-shanebrain-core (local AI cluster)
-        ↑
-        │ optional webhook — fire-and-forget
-        │
-srm-dispatch (static PWA)
-```
-
-srm-dispatch optionally POSTs audible events to ShaneBrain for logging — but it **never depends on ShaneBrain being alive**. Dispatch works with or without the cluster running.
-
-See `CLAUDE.md` for full integration details and the complete fix/feature backlog.
-
----
-
-## LICENSE
-
-Internal operations tool — SRM Concrete North Alabama.
-
----
-
-*Built by Shane · SRM Dispatch · Hazel Green AL*  
-*"File structure first. Action over theory."*
+MIT — free to use, fork, and adapt for your own dispatch operation.
