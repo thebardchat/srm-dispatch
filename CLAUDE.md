@@ -97,3 +97,8 @@ srm-dispatch
 ---
 
 *Last updated: March 2026 · thebardchat/srm-dispatch · v1.0*
+
+## Claude Code Rules
+- Commit and push directly to `main`. Do NOT create branches.
+- Run build/test commands before committing.
+- Update CLAUDE.md session log before final commit.
