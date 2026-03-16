@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, Fragment } from "react"
+import { useState, useEffect, useCallback, Fragment, useRef } from "react"
 import { ALL_DRIVERS, CREW_TABS, BP_GROUPS } from './config/crew.js'
 import { ALL_PLANTS, SUBS } from './config/plants.js'
 import { getCycleDay, getBPGroup, getBPDrivers, driverBPDay, getBPCalendar, isTueFri } from './utils/rotation.js'
 import { buildShorthand } from './utils/shorthand.js'
-import { addMinutes } from './config/distances.js'
+import { addMinutes, getDriveTime } from './config/distances.js'
+import { CREW_QUARRY, CREW_DELIVERY_POOLS, DELIVERY_PLANTS, getProximityRanking, autoPlanDay, SPREAD_RULES, saveKnowledge, loadKnowledge, clearKnowledge } from './config/knowledge.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Anthropic-Inspired Design System
@@ -236,6 +237,65 @@ export default function App() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [])
 
+  /* ── Auto-Plan State ── */
+  const [autoPlans, setAutoPlans] = useState(null)
+  const [editPools, setEditPools] = useState(() => {
+    const saved = loadKnowledge()
+    return saved?.pools || { ...CREW_DELIVERY_POOLS }
+  })
+  const [editQuarry, setEditQuarry] = useState(() => {
+    const saved = loadKnowledge()
+    return saved?.quarry || { ...CREW_QUARRY }
+  })
+
+  function runAutoPlan() {
+    const plans = autoPlanDay(ALL_DRIVERS, editQuarry, editPools, cycleDay)
+    setAutoPlans(plans)
+  }
+
+  function clearAutoPlan() {
+    setAutoPlans(null)
+  }
+
+  function saveEdits() {
+    saveKnowledge({ pools: editPools, quarry: editQuarry })
+  }
+
+  function resetEdits() {
+    clearKnowledge()
+    setEditPools({ ...CREW_DELIVERY_POOLS })
+    setEditQuarry({ ...CREW_QUARRY })
+    setAutoPlans(null)
+  }
+
+  /* ── Smart Keys ── */
+  useEffect(() => {
+    function onKey(e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return
+      const key = e.key.toLowerCase()
+      if (key === "arrowleft")  { e.preventDefault(); navigateDay(-1) }
+      if (key === "arrowright") { e.preventDefault(); navigateDay(1) }
+      if (key === "t") setTf(p => !p)
+      if (key === "m") setMhDay(p => !p)
+      if (key === "s") setSwap519(p => !p)
+      if (key === "c") setCurtisOffice(p => !p)
+      if (key === "a") setView(v => v === "AUDIBLES" ? "ROUTES" : "AUDIBLES")
+      if (key === "b") setView(v => v === "CALENDAR" ? "ROUTES" : "CALENDAR")
+      if (key === "e") setView(v => v === "SETTINGS" ? "ROUTES" : "SETTINGS")
+      if (key === "p") runAutoPlan()
+      if (key === "r") { setView("ROUTES"); clearAutoPlan() }
+      if (key === "1") setCrew("ALL")
+      if (key === "2") setCrew("519")
+      if (key === "3") setCrew("507")
+      if (key === "4") setCrew("506")
+      if (key === "5") setCrew("BRIDGEPORT")
+      if (key === "6") setCrew("DUMP")
+      if (key === "?" || (e.shiftKey && key === "/")) setView(v => v === "KEYS" ? "ROUTES" : "KEYS")
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
+
   /* ── URL State Persistence ── */
   useEffect(() => {
     const params = new URLSearchParams()
@@ -298,7 +358,7 @@ export default function App() {
     } else { fallbackCopy(final, key) }
   }, [down])
 
-  const shArgs = { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay, startOverrides }
+  const shArgs = { tf, mhDay, down, subMap, curtisOffice, swap519, cycleDay, startOverrides, autoPlans }
 
   /* ═══════════════════════════════════════════════════════════
      RENDER
@@ -392,6 +452,12 @@ export default function App() {
                     active={view==="AUDIBLES"} color={T.red} onClick={() => setView(v=>v==="AUDIBLES"?"ROUTES":"AUDIBLES")} small />
               <Pill label="BP CALENDAR"
                     active={view==="CALENDAR"} color={T.blue} onClick={() => setView(v=>v==="CALENDAR"?"ROUTES":"CALENDAR")} small />
+              <Pill label={autoPlans ? "AUTO-PLAN ON" : "AUTO-PLAN"}
+                    active={!!autoPlans} color={T.green} onClick={() => autoPlans ? clearAutoPlan() : runAutoPlan()} small />
+              <Pill label="SETTINGS"
+                    active={view==="SETTINGS"} color={T.text2} onClick={() => setView(v=>v==="SETTINGS"?"ROUTES":"SETTINGS")} small />
+              <Pill label="KEYS (?)"
+                    active={view==="KEYS"} color={T.text3} onClick={() => setView(v=>v==="KEYS"?"ROUTES":"KEYS")} small />
             </div>
           </div>
         </div>
@@ -552,6 +618,262 @@ export default function App() {
           </div>
         )
       })()}
+
+      {/* ═══ AUTO-PLAN BANNER ═══ */}
+      {autoPlans && view === "ROUTES" && (
+        <div style={{
+          background:`${T.green}08`, borderBottom:`1px solid ${T.green}22`,
+          padding:'8px 20px', display:'flex', justifyContent:'space-between', alignItems:'center',
+        }}>
+          <span style={{ fontSize:'10px', color:T.green, fontWeight:600, letterSpacing:'1px' }}>
+            AUTO-PLAN ACTIVE — Routes optimized by proximity
+          </span>
+          <button onClick={clearAutoPlan} style={{
+            background:'transparent', border:`1px solid ${T.green}44`, color:T.green,
+            padding:'3px 12px', fontSize:'9px', borderRadius:'99px', fontFamily:T.font, fontWeight:500,
+          }}>CLEAR</button>
+        </div>
+      )}
+
+      {/* ═══ SMART KEYS REFERENCE ═══ */}
+      {view === "KEYS" && (
+        <div style={{ padding:'20px' }}>
+          <div style={{ fontSize:'10px', color:T.text3, letterSpacing:'2px', marginBottom:'16px', fontWeight:500 }}>
+            KEYBOARD SHORTCUTS
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:'8px' }}>
+            {[
+              ["←/→", "Navigate days"],
+              ["T", "Toggle TUE/FRI mode"],
+              ["M", "Toggle MH DAY"],
+              ["S", "Toggle 519 SWAP"],
+              ["C", "Toggle CURTIS OFFICE"],
+              ["A", "Show/hide AUDIBLES"],
+              ["B", "Show/hide BP CALENDAR"],
+              ["E", "Show/hide SETTINGS"],
+              ["P", "Run AUTO-PLAN optimizer"],
+              ["R", "Back to ROUTES + clear plan"],
+              ["1-6", "Switch crew tabs (ALL/519/507/506/BP/DUMP)"],
+              ["?", "Show/hide this panel"],
+            ].map(([key, desc]) => (
+              <div key={key} style={{
+                background:T.surface, border:`1px solid ${T.border}`, borderRadius:T.rSm,
+                padding:'10px 14px', display:'flex', gap:'12px', alignItems:'center',
+              }}>
+                <span style={{
+                  background:T.raised, border:`1px solid ${T.border}`, color:T.brand,
+                  padding:'4px 10px', borderRadius:T.rXs, fontFamily:T.mono, fontSize:'12px',
+                  fontWeight:700, minWidth:'32px', textAlign:'center',
+                }}>{key}</span>
+                <span style={{ color:T.text2, fontSize:'11px' }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SETTINGS / KNOWLEDGE BASE EDITOR ═══ */}
+      {view === "SETTINGS" && (
+        <div style={{ padding:'20px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
+            <div style={{ fontSize:'10px', color:T.text3, letterSpacing:'2px', fontWeight:500 }}>
+              KNOWLEDGE BASE — EDIT ROUTING RULES
+            </div>
+            <div style={{ display:'flex', gap:'8px' }}>
+              <button onClick={saveEdits} style={{
+                background:`${T.green}15`, border:`1px solid ${T.green}44`, color:T.green,
+                padding:'6px 16px', fontSize:'10px', borderRadius:'99px', fontFamily:T.font, fontWeight:600,
+              }}>SAVE CHANGES</button>
+              <button onClick={resetEdits} style={{
+                background:`${T.red}10`, border:`1px solid ${T.red}33`, color:T.red,
+                padding:'6px 16px', fontSize:'10px', borderRadius:'99px', fontFamily:T.font, fontWeight:500,
+              }}>RESET TO DEFAULT</button>
+            </div>
+          </div>
+
+          {/* Crew → Quarry Hub Assignment */}
+          <div style={{
+            background:T.surface, border:`1px solid ${T.border}`, borderRadius:T.r,
+            padding:'16px', marginBottom:'16px',
+          }}>
+            <div style={{ fontSize:'10px', color:T.brand, letterSpacing:'1px', marginBottom:'12px', fontWeight:600 }}>
+              CREW QUARRY HUB ASSIGNMENTS
+            </div>
+            <div style={{ fontSize:'9px', color:T.text3, marginBottom:'12px' }}>
+              Which quarry does each crew pick up scrap from?
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'10px' }}>
+              {Object.entries(editQuarry).map(([crewCode, hub]) => (
+                <div key={crewCode} style={{
+                  background:T.raised, border:`1px solid ${T.border}`, borderRadius:T.rSm,
+                  padding:'10px 14px',
+                }}>
+                  <div style={{ fontSize:'11px', color:CREW_CLR[crewCode] || T.text, fontWeight:600, marginBottom:'6px' }}>
+                    CREW {crewCode}
+                  </div>
+                  <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                    {["591", "594"].map(q => (
+                      <button key={q} onClick={() => setEditQuarry(p => ({ ...p, [crewCode]: q }))}
+                        style={{
+                          background: hub === q ? `${T.brand}20` : 'transparent',
+                          border: `1px solid ${hub === q ? T.brand : T.border}`,
+                          color: hub === q ? T.brand : T.text3,
+                          padding:'4px 12px', fontSize:'10px', borderRadius:'99px', fontFamily:T.font,
+                        }}>
+                        {q === "591" ? "591 MH" : "594 Cher"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Crew Delivery Pools — Editable ordering */}
+          <div style={{
+            background:T.surface, border:`1px solid ${T.border}`, borderRadius:T.r,
+            padding:'16px', marginBottom:'16px',
+          }}>
+            <div style={{ fontSize:'10px', color:T.brand, letterSpacing:'1px', marginBottom:'12px', fontWeight:600 }}>
+              DELIVERY PLANT POOLS — PROXIMITY ORDER
+            </div>
+            <div style={{ fontSize:'9px', color:T.text3, marginBottom:'12px' }}>
+              Drag or tap to reorder. First plant = highest priority (closest). Tap a plant to add/remove from pool.
+            </div>
+            {Object.entries(editPools).map(([crewCode, plants]) => {
+              const hub = editQuarry[crewCode] || "591"
+              const ranking = getProximityRanking(hub)
+              return (
+                <div key={crewCode} style={{
+                  background:T.raised, border:`1px solid ${T.border}`, borderRadius:T.rSm,
+                  padding:'14px', marginBottom:'10px',
+                }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+                    <span style={{ fontSize:'11px', color:CREW_CLR[crewCode] || T.text, fontWeight:600 }}>
+                      CREW {crewCode} — Hub: {hub === "591" ? "Mt. Hope" : "Cherokee"}
+                    </span>
+                    <button onClick={() => {
+                      setEditPools(p => ({
+                        ...p,
+                        [crewCode]: ranking.map(r => r.code),
+                      }))
+                    }} style={{
+                      background:'transparent', border:`1px solid ${T.text4}`, color:T.text3,
+                      padding:'3px 10px', fontSize:'9px', borderRadius:'99px', fontFamily:T.font,
+                    }}>AUTO-SORT BY PROXIMITY</button>
+                  </div>
+                  {/* Current pool order */}
+                  <div style={{ display:'flex', gap:'4px', flexWrap:'wrap', marginBottom:'10px' }}>
+                    {plants.map((code, i) => {
+                      const time = getDriveTime(hub, code)
+                      return (
+                        <div key={code} style={{
+                          background:`${CREW_CLR[crewCode] || T.brand}12`,
+                          border:`1px solid ${CREW_CLR[crewCode] || T.brand}33`,
+                          borderRadius:T.rXs, padding:'6px 10px', display:'flex', alignItems:'center', gap:'6px',
+                        }}>
+                          <span style={{ color:T.text3, fontSize:'9px', fontWeight:700 }}>{i+1}</span>
+                          <span style={{ color:CREW_CLR[crewCode] || T.text, fontSize:'11px', fontFamily:T.mono }}>{code}</span>
+                          <span style={{ color:T.text4, fontSize:'9px' }}>{time}m</span>
+                          <button onClick={() => {
+                            setEditPools(p => ({
+                              ...p,
+                              [crewCode]: p[crewCode].filter(c => c !== code),
+                            }))
+                          }} style={{
+                            background:'transparent', border:'none', color:T.red,
+                            fontSize:'12px', padding:'0 2px', fontFamily:T.font, lineHeight:'1',
+                          }}>x</button>
+                          {i > 0 && (
+                            <button onClick={() => {
+                              setEditPools(p => {
+                                const arr = [...p[crewCode]]
+                                ;[arr[i-1], arr[i]] = [arr[i], arr[i-1]]
+                                return { ...p, [crewCode]: arr }
+                              })
+                            }} style={{
+                              background:'transparent', border:'none', color:T.text3,
+                              fontSize:'10px', padding:'0 2px', fontFamily:T.font,
+                            }}>^</button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Available plants to add */}
+                  <div style={{ display:'flex', gap:'4px', flexWrap:'wrap' }}>
+                    {DELIVERY_PLANTS.filter(dp => !plants.includes(dp)).map(code => {
+                      const time = getDriveTime(hub, code)
+                      return (
+                        <button key={code} onClick={() => {
+                          setEditPools(p => ({
+                            ...p,
+                            [crewCode]: [...p[crewCode], code],
+                          }))
+                        }} style={{
+                          background:T.surface, border:`1px dashed ${T.border}`,
+                          color:T.text4, padding:'4px 10px', fontSize:'10px',
+                          borderRadius:T.rXs, fontFamily:T.mono,
+                        }}>+ {code} ({time}m)</button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Proximity Map — Read-only visualization */}
+          <div style={{
+            background:T.surface, border:`1px solid ${T.border}`, borderRadius:T.r,
+            padding:'16px', marginBottom:'16px',
+          }}>
+            <div style={{ fontSize:'10px', color:T.brand, letterSpacing:'1px', marginBottom:'12px', fontWeight:600 }}>
+              PROXIMITY MAP — DRIVE TIMES FROM HUBS
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+              {[["591", "Mt. Hope (MH)"], ["594", "Cherokee (Cher)"]].map(([hub, hubName]) => {
+                const ranking = getProximityRanking(hub)
+                return (
+                  <div key={hub}>
+                    <div style={{ fontSize:'11px', color:T.text, fontWeight:600, marginBottom:'8px' }}>{hubName}</div>
+                    {ranking.map((r, i) => (
+                      <div key={r.code} style={{
+                        display:'flex', justifyContent:'space-between', alignItems:'center',
+                        padding:'4px 8px', fontSize:'10px', fontFamily:T.mono,
+                        background: i % 2 === 0 ? T.raised : 'transparent',
+                        borderRadius:T.rXs,
+                      }}>
+                        <span style={{ color:T.text2 }}>{i+1}. {r.code}</span>
+                        <span style={{
+                          color: r.time <= 35 ? T.green : r.time <= 60 ? T.amber : T.red,
+                          fontWeight:600,
+                        }}>{r.time} min</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Spread Rules */}
+          <div style={{
+            background:T.surface, border:`1px solid ${T.border}`, borderRadius:T.r,
+            padding:'16px',
+          }}>
+            <div style={{ fontSize:'10px', color:T.brand, letterSpacing:'1px', marginBottom:'12px', fontWeight:600 }}>
+              OPTIMIZATION RULES
+            </div>
+            <div style={{ fontSize:'11px', color:T.text2, lineHeight:'2.2' }}>
+              Max same plant per day: <span style={{ color:T.brand, fontWeight:600 }}>{SPREAD_RULES.maxSamePlantPerDay}</span><br/>
+              Proximity weight: <span style={{ color:T.brand, fontWeight:600 }}>{(SPREAD_RULES.proximityWeight * 100).toFixed(0)}%</span><br/>
+              Fairness weight: <span style={{ color:T.brand, fontWeight:600 }}>{(SPREAD_RULES.fairnessWeight * 100).toFixed(0)}%</span><br/>
+              Cross-crew assignments: <span style={{ color: SPREAD_RULES.allowCrossCrew ? T.green : T.red, fontWeight:600 }}>{SPREAD_RULES.allowCrossCrew ? "ON" : "OFF"}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ DRIVER CARDS ═══ */}
       {view==="ROUTES" && (
