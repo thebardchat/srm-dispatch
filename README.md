@@ -1,6 +1,12 @@
-# 🚛 srm-dispatch
+# srm-dispatch
 
-> Daily route planning and driver assignment tool for SRM Concrete's North Alabama dump truck fleet. Built by a dispatcher, for a dispatcher.
+> **DEPRECATED** — This repo has been consolidated into [MASTER-Scheduler-Dashboard-SRM](https://github.com/thebardchat/MASTER-Scheduler-Dashboard-SRM).
+>
+> All dispatch routing, knowledge base, auto-planning, smart keys, and proximity-based optimization features now live in the MASTER repo. This repo is archived for reference only. Do not develop here.
+
+---
+
+*Original description: Daily route planning and driver assignment tool for SRM Concrete's North Alabama dump truck fleet. Built by a dispatcher, for a dispatcher.*
 
 This project operates under the [ShaneTheBrain Constitution](https://github.com/thebardchat/constitution/blob/main/CONSTITUTION.md).
 
