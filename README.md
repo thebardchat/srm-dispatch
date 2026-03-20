@@ -115,3 +115,16 @@ This tool is built for the real world — a dispatcher who is also the sole prov
 ## License
 
 MIT — free to use, fork, and adapt for your own dispatch operation.
+
+
+---
+
+## Support This Work
+
+If what I'm building matters to you — local AI for real people, tools for the left-behind — here's how to help:
+
+- **[Sponsor me on GitHub](https://github.com/sponsors/thebardchat)**
+- **[Buy the book](https://www.amazon.com/Probably-Think-This-Book-About/dp/B0GT25R5FD)** — *You Probably Think This Book Is About You*
+- **Star the repos** — visibility matters for projects like this
+
+Built by **Shane Brazelton** · Co-built with **Claude** (Anthropic) · Hazel Green, Alabama
