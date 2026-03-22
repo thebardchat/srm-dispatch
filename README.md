@@ -1,4 +1,8 @@
-# 🚛 srm-dispatch
+<div align="center"><img src=".github/assets/banner.png" alt="SRM Dispatch" width="100%"></div>
+
+[![Constitution](https://img.shields.io/badge/Constitution-ShaneTheBrain-blue)](https://github.com/thebardchat/constitution)
+
+# SRM Dispatch
 
 > Daily route planning and driver assignment tool for SRM Concrete's North Alabama dump truck fleet. Built by a dispatcher, for a dispatcher.
 
@@ -128,3 +132,11 @@ If what I'm building matters to you — local AI for real people, tools for the 
 - **Star the repos** — visibility matters for projects like this
 
 Built by **Shane Brazelton** · Co-built with **Claude** (Anthropic) · Hazel Green, Alabama
+
+---
+
+<div align="center">
+
+*Part of the [ShaneBrain Ecosystem](https://github.com/thebardchat) · Built under the [Constitution](https://github.com/thebardchat/constitution)*
+
+</div>
