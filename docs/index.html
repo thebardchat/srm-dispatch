@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRM Dispatch — ShaneBrain Ecosystem</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+  .hero { background: linear-gradient(135deg, #161b22 0%, #1c2128 100%); border-bottom: 1px solid #30363d; padding: 60px 24px 48px; text-align: center; }
+  .hero pre { color: #f85149; font-size: 0.7rem; line-height: 1.2; display: inline-block; text-align: left; margin-bottom: 24px; }
+  h1 { font-size: 2.4rem; font-weight: 700; color: #58a6ff; margin-bottom: 12px; }
+  .tagline { font-size: 1.1rem; color: #8b949e; max-width: 600px; margin: 0 auto 32px; }
+  .badge { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; margin: 4px; font-size: 0.85rem; color: #c9d1d9; text-decoration: none; }
+  .badge:hover { border-color: #58a6ff; color: #58a6ff; }
+  .cta { display: inline-block; background: #238636; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 8px; transition: background 0.2s; }
+  .cta:hover { background: #2ea043; }
+  .cta.secondary { background: #21262d; border: 1px solid #30363d; }
+  .cta.secondary:hover { background: #30363d; }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+  .section { margin-bottom: 48px; }
+  h2 { font-size: 1.5rem; color: #f0f6fc; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 1px solid #30363d; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .feature { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .feature h3 { color: #58a6ff; margin-bottom: 8px; font-size: 1rem; }
+  .feature p { color: #8b949e; font-size: 0.9rem; }
+  .stack { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag { background: #1c2128; border: 1px solid #30363d; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: #79c0ff; }
+  .ecosystem { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .eco-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; text-decoration: none; transition: border-color 0.2s; }
+  .eco-card:hover { border-color: #58a6ff; }
+  .eco-card h4 { color: #58a6ff; font-size: 0.9rem; margin-bottom: 4px; }
+  .eco-card p { color: #8b949e; font-size: 0.8rem; }
+  footer { background: #161b22; border-top: 1px solid #30363d; padding: 32px 24px; text-align: center; color: #8b949e; font-size: 0.9rem; }
+  footer a { color: #58a6ff; text-decoration: none; }
+  .referral { background: #0d1117; border: 1px solid #238636; border-radius: 8px; padding: 16px; margin: 32px 0; text-align: center; }
+  .referral a { color: #3fb950; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+<pre>
+███████╗██████╗ ███╗   ███╗
+██╔════╝██╔══██╗████╗ ████║
+███████╗██████╔╝██╔████╔██║
+╚════██║██╔══██╗██║╚██╔╝██║
+███████║██║  ██║██║ ╚═╝ ██║
+╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝
+DISPATCH // HAZEL GREEN AL
+</pre>
+<h1>SRM Dispatch</h1>
+<p class="tagline">SRM Concrete North Alabama — Daily dispatch tool for 18 dump truck drivers. Local-first React PWA. No cloud. No login. One tap, paste, done.</p>
+<div>
+  <a href="https://github.com/thebardchat/srm-dispatch" class="cta">View on GitHub</a>
+  <a href="https://github.com/thebardchat/treasures" class="cta secondary">Treasures Hub</a>
+</div>
+<div style="margin-top:20px;">
+  <span class="badge">React 18</span>
+  <span class="badge">Vite 5</span>
+  <span class="badge">Static PWA</span>
+  <span class="badge">No Backend</span>
+</div>
+</div>
+
+<div class="container">
+
+<div class="section">
+<h2>What It Does</h2>
+<div class="features">
+  <div class="feature">
+    <h3>Daily Route Generation</h3>
+    <p>Per-driver routes based on crew, day type, and plant availability. One tap copies the full route to paste into a text message.</p>
+  </div>
+  <div class="feature">
+    <h3>Bridgeport Rotation</h3>
+    <p>3-group (A/B/C) continuous weekday cycle, auto-calculated. Never resets — holidays skipped, not restarted. 4-week calendar view.</p>
+  </div>
+  <div class="feature">
+    <h3>Audible System</h3>
+    <p>Mark any plant DOWN, routes auto-update with substitutions from the pre-defined plant substitution map. Red banner warns dispatchers instantly.</p>
+  </div>
+  <div class="feature">
+    <h3>Day Type Toggle</h3>
+    <p>One-click switch between Mon/Wed/Thu and Tue/Fri schedules. Auto-detects on load, override manually.</p>
+  </div>
+  <div class="feature">
+    <h3>Special Modes</h3>
+    <p>MH Day, 519 Swap, Curtis Office, Alexis Short Day — built-in special schedule modes for real operational scenarios.</p>
+  </div>
+  <div class="feature">
+    <h3>Crew Tabs</h3>
+    <p>ALL, DUMP, BRIDGEPORT, 507, 519, 506 — filter drivers by crew or plant assignment instantly.</p>
+  </div>
+</div>
+</div>
+
+<div class="section">
+<h2>Tech Stack</h2>
+<div class="stack">
+  <span class="tag">React 18</span>
+  <span class="tag">Vite 5</span>
+  <span class="tag">Inline Styles (intentional)</span>
+  <span class="tag">useState only</span>
+  <span class="tag">No backend</span>
+  <span class="tag">No database</span>
+  <span class="tag">No login</span>
+  <span class="tag">Static PWA</span>
+</div>
+</div>
+
+<div class="section">
+<h2>Quick Start</h2>
+<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;color:#c9d1d9;overflow-x:auto;">git clone https://github.com/thebardchat/srm-dispatch.git
+cd srm-dispatch
+npm install
+npm run dev
+# Opens at http://localhost:5173</pre>
+</div>
+
+<div class="section">
+<h2>ShaneBrain Ecosystem</h2>
+<div class="ecosystem">
+  <a href="https://thebardchat.github.io/AI-Trainer-MAX/" class="eco-card">
+    <h4>AI-Trainer-MAX</h4>
+    <p>5-phase local AI training curriculum for non-technical users</p>
+  </a>
+  <a href="https://thebardchat.github.io/angelcloud-actual/" class="eco-card">
+    <h4>angelcloud-actual</h4>
+    <p>Angel Cloud platform — Firebase, Pulsar security, logistics API</p>
+  </a>
+  <a href="https://thebardchat.github.io/thought-tree/" class="eco-card">
+    <h4>thought-tree</h4>
+    <p>React visual thought browser with Weaviate + Ollama semantic search</p>
+  </a>
+  <a href="https://thebardchat.github.io/mini-shanebrain/" class="eco-card">
+    <h4>mini-shanebrain</h4>
+    <p>Multi-platform social bot framework (X, FB, LinkedIn, etc.)</p>
+  </a>
+  <a href="https://thebardchat.github.io/shanebrain-learning/" class="eco-card">
+    <h4>shanebrain-learning</h4>
+    <p>Auto-learning inbox pipeline — drop files in, ingest to Weaviate</p>
+  </a>
+  <a href="https://thebardchat.github.io/multi-container-app/" class="eco-card">
+    <h4>multi-container-app</h4>
+    <p>Docker multi-container template (Node.js + MongoDB)</p>
+  </a>
+  <a href="https://github.com/thebardchat/treasures" class="eco-card">
+    <h4>treasures</h4>
+    <p>ShaneBrain recovered artifacts hub — scripts, projects, creative</p>
+  </a>
+</div>
+</div>
+
+<div class="referral">
+  Built with <a href="https://claude.ai/referral/4fAMYN9Ing">Claude + ShaneBrain</a> — AI tools for humans who build.
+</div>
+
+</div>
+
+<footer>
+  <p>Built by <strong>Shane Brazelton + Claude Anthropic</strong> | ShaneBrain Ecosystem | Hazel Green, AL</p>
+  <p style="margin-top:8px;"><a href="https://github.com/thebardchat">github.com/thebardchat</a> · <a href="https://claude.ai/referral/4fAMYN9Ing">Try Claude free →</a></p>
+</footer>
+
+</body>
+</html>
