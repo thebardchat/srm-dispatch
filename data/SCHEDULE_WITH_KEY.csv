@@ -1,0 +1,53 @@
+Driver,Clock In,Pickup 1,Product 1,Delivery 1,Pickup 2,Product 2,Delivery 2,Pickup 3,Product 3,Delivery 3,Pickup 4,Product 4,Delivery 4
+Eddie Andrews,4:15:00 AM,MH,78,506,907,SCRAP,MH,MH,67,506,HH,CSAND,507
+Jamie Chaney,4:30:00 AM,CHER,MSAND,908,907,SCRAP,MH,MH,78,513,HH,CSAND,519
+Jimmy Combs,4:15:00 AM,MH,78,511,907,SCRAP,MH,MH,67,506,HH,CSAND,513
+Eboni Williams,4:30:00 AM,907,SCRAP,MH,MH,78,506,HH,CSAND,508,MH,78,514
+Charlie Hall,4:30:00 AM,CHER,MSAND,908,907,SCRAP,MH,MH,8910,908,HH,CSAND,506
+Stacey Prater,4:00:00 AM,MONT,CSAND,511,HH,CSAND,519,CHER,MSAND,908,907,SCRAP,MH
+Jonathon Naylor,4:15:00 AM,POF,CSAND,506,HH,CSAND,513,HH,CSAND,519,CHER,MSAND,908
+Bryant Skipper,4:30:00 AM,CHER,MSAND,908,HH,CSAND,519,CHER,MSAND,908,HH,CSAND,519
+Cobra Steele,4:00:00 AM,CHER,MSAND,908,HH,CSAND,519,CHER,MSAND,908,HH,CSAND,506
+Kenny Swoopes,4:30:00 AM,CHER,MSAND,908,HH,CSAND,519,CHER,MSAND,908,HH,CSAND,506
+Deletra Taft,5:00:00 AM,907,SCRAP,MH,MH,67,519,CHER,MSAND,908,HH,CSAND,507
+Marcus Williams,5:00:00 AM,907,SCRAP,MH,MH,67,506,HH,CSAND,519,CHER,MSAND,908
+Alexis Overton,7:15:00 AM,RGH,67,506,HH,CSAND,516,RG,67,506,HH,CSAND,516
+Jermicael,5:00:00 AM,907,SCRAP,MH,MH,67,506,HH,CSAND,508,HH,CSAND,508
+Woody Duncan,2:30:00 AM,MONT,CSAND,51,MONT,MSAND,CUST,MM,67,511,HH,CSAND,507
+Chris Peters,4:00:00 AM,CHER ,MSAND,908,907,SCRAP,MH,MH,67,519,CHER,MSAND,908
+Roberto,4:15:00 AM,T,T,T,T,T,T,T,T,T,T,T,T
+Tim Moman,4:15:00 AM,T,T,T,T,T,T,T,T,T,T,T,T
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+ABBREVIATION KEY,,,,,,,,,,,,,
+MH,MOUNT HOPE,,,,,,,,,,,,
+908,250 PALMER BLOCK,,,,,,,,,,,,
+907,656 PALMER BLOCK,,,,,,,,,,,,
+MONT,MONTEAGLE TN,,,,,,,,,,,,
+POF,PORT OF FLORENCE,,,,ZONAR LOGIN NEW EMPLOYEE,,,,,,,,
+RGH,ROGERS GROUP HSV,,,,,,,,,,,,
+MSAND,MAN SAND,,,,,,,,,,,,
+CSAND,CONCRETE SAND,,,,,,,,,,,,
+HH,HOLLINGSHEAD HARBOR,,,,,,,,,,,,
+MM,MARTIN MARIETTA,,,,,,,,,,,,
+CHER ,CHEROKEE,,,,,,,,,,,,
+Training,T,,,,,,,,,,,,
+Chris Peters,Estimate on Shop Being Done with Truck 7.3.2024,,,,,,,,,,,,
+Tim Moman,Estimate on Shop Being Done with Truck 7.3.2025,,,,,,,,,,,,
+ABBREVIATION KEY,,,,,,,,,,,,,
+MH,Mount Hope Quarry,,,,,,,,,,,,
+CHER,Cherokee Quarry,,,,,,,,,,,,
+MSAND,Man Sand,,,,,,,,,,,,
+SCRAP,Scrap Material,,,,,,,,,,,,
+HH,Hobbs Hollow,,,,,,,,,,,,
+CSAND,Concrete Sand,,,,,,,,,,,,
+506,Plant 506 - Decatur,,,,,,,,,,,,
+507,Plant 507,,,,,,,,,,,,
+508,Plant 508 - Huntsville,,,,,,,,,,,,
+511,Plant 511 - Madison,,,,,,,,,,,,
+513,Plant 513 - Greenbrier,,,,,,,,,,,,
+514,Plant 514,,,,,,,,,,,,
+519,Plant 519,,,,,,,,,,,,
+8910,Job Site 8910,,,,,,,,,,,,
+907,Job Site 907,,,,,,,,,,,,
+908,Job Site 908,,,,,,,,,,,,
